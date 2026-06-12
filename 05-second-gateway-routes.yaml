@@ -1,0 +1,71 @@
+# HTTPRoutes that expose the SAME MaaS-managed models through the SECOND gateway.
+# MaaS only auto-generates routes on maas-default-gateway; these are the manual
+# equivalents on secure-gateway. Each is a single catch-all: it strips the
+# /demo-llm/<model> prefix and forwards everything (chat, completions, embeddings,
+# tokenize, ...) to the model's vLLM workload Service.
+#
+# Backend is the plain workload Service (simple, verified). For qwen-3 you can
+# instead point at the InferencePool (group inference.networking.x-k8s.io, kind
+# InferencePool, name qwen-3-inference-pool) to keep llm-d prefix-cache scheduling.
+#
+# Auth + quota are attached separately by mirror-maas-policies.sh.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: qwen-3-secure-route
+  namespace: demo-llm
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: secure-gateway
+      namespace: openshift-ingress
+  hostnames:
+    - "secure.apps.cluster-nmv4m.nmv4m.sandbox1140.opentlc.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /demo-llm/qwen-3
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: qwen-3-kserve-workload-svc
+          port: 8000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bge-embed-secure-route
+  namespace: demo-llm
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: secure-gateway
+      namespace: openshift-ingress
+  hostnames:
+    - "secure.apps.cluster-nmv4m.nmv4m.sandbox1140.opentlc.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /demo-llm/bge-embed
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: bge-embed-kserve-workload-svc
+          port: 8000

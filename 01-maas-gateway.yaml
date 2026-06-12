@@ -1,15 +1,10 @@
-# MaaS gateway for THIS cluster (hostname corrected to the cluster-nmv4m apps
-# domain; the repo copy was hardcoded to a different sandbox cluster).
-# Must be named maas-default-gateway in openshift-ingress; the DSC modelsAsService
-# reconcile blocks until it exists.
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
-  name: maas-gateway-class
-spec:
-  controllerName: openshift.io/gateway-controller/v1
----
+# Gateway 1 — the MaaS gateway (created by the MaaS platform install; included
+# here for reference). MaaS auto-manages this gateway: it attaches the
+# gateway-level AuthPolicy, exposes the maas-api (key minting + /v1/models), and
+# generates the per-model HTTPRoutes/auth/quota on it.
+#
+# Must be named maas-default-gateway in openshift-ingress. Edit the hostname for
+# your cluster's apps domain.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:

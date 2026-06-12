@@ -1,7 +1,0 @@
-# Separate trust-zone namespace for the "secure" model (workload isolation).
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: secure-models
-  labels:
-    opendatahub.io/dashboard: "true"

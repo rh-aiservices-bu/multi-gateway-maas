@@ -1,0 +1,30 @@
+# Gateway 2 — a SECOND, independent gateway with its own external IP and
+# hostname. It is NOT managed by MaaS; we add routes + auth onto it ourselves
+# (05-second-gateway-routes.yaml + mirror-maas-policies.sh) so the same
+# MaaS-managed models are reachable through this second IP, governed by the same
+# MaaS API keys.
+#
+# Plain openshift-default GatewayClass (any Kuadrant-capable gateway works).
+# Edit the hostname for your cluster's apps domain (the *.apps wildcard cert
+# covers it).
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: secure-gateway
+  namespace: openshift-ingress
+spec:
+  gatewayClassName: openshift-default
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "secure.apps.cluster-nmv4m.nmv4m.sandbox1140.opentlc.com"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            group: ""
+            name: cert-manager-ingress-cert

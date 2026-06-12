@@ -1,0 +1,62 @@
+# The MaaS-managed models. Both bound to maas-default-gateway (gateway 1).
+# - qwen-3   : generative chat, served via llm-d (router.scheduler: {})
+# - bge-embed: embeddings, served via PLAIN vLLM (no router.scheduler, --runner
+#              pooling) so /v1/embeddings routes (a generative llm-d model 404s it)
+# Each replica needs 1 GPU.
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: qwen-3
+  namespace: demo-llm
+spec:
+  model:
+    name: qwen-3
+    uri: hf://Qwen/Qwen3-0.6B
+  replicas: 1
+  router:
+    gateway:
+      refs:
+        - name: maas-default-gateway
+          namespace: openshift-ingress
+    route: {}
+    scheduler: {}
+  template:
+    containers:
+      - name: main
+        resources:
+          limits: { cpu: "1", memory: 12Gi, nvidia.com/gpu: "1" }
+          requests: { cpu: "1", memory: 12Gi, nvidia.com/gpu: "1" }
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: bge-embed
+  namespace: demo-llm
+spec:
+  model:
+    name: bge-embed
+    uri: hf://BAAI/bge-base-en-v1.5
+  replicas: 1
+  router:
+    gateway:
+      refs:
+        - name: maas-default-gateway
+          namespace: openshift-ingress
+    route: {}
+    # no scheduler: => plain vLLM (so /v1/embeddings is served)
+  template:
+    containers:
+      - name: main
+        args: ["--runner", "pooling"]
+        resources:
+          limits: { cpu: "1", memory: 8Gi, nvidia.com/gpu: "1" }
+          requests: { cpu: "1", memory: 8Gi, nvidia.com/gpu: "1" }
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule

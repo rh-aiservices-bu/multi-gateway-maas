@@ -1,5 +1,20 @@
-# Publishes bge-embed to MaaS and adds it to the existing subscription + auth
-# policy (alongside qwen-3). Embeddings meter INPUT tokens only; budget 5000/1h.
+# Publishes both models to MaaS and grants a subscription + authorization policy.
+# - MaaSModelRef       : registers each LLMInferenceService in the MaaS catalog
+#                        (what the dashboard's "Publish as MaaS endpoint" creates)
+# - MaaSSubscription   : per-model token budgets (qwen-3 1000/h, bge-embed 5000/h)
+# - MaaSAuthPolicy     : which groups may call the models at the gateway
+# system:cluster-admins is included so kube:admin can mint keys; use real
+# OpenShift/OIDC groups for per-user governance.
+---
+apiVersion: maas.opendatahub.io/v1alpha1
+kind: MaaSModelRef
+metadata:
+  name: qwen-3
+  namespace: demo-llm
+spec:
+  modelRef:
+    kind: LLMInferenceService
+    name: qwen-3
 ---
 apiVersion: maas.opendatahub.io/v1alpha1
 kind: MaaSModelRef

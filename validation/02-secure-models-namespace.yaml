@@ -1,0 +1,7 @@
+# Separate trust-zone namespace for the "secure" model (B2/B3 isolation).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secure-models
+  labels:
+    opendatahub.io/dashboard: "true"

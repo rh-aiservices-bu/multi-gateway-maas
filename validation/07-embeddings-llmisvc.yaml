@@ -1,0 +1,44 @@
+# Embedding model (BAAI/bge-base-en-v1.5) served via PLAIN vLLM, not llm-d.
+# Validates that /v1/embeddings — which 404s on a generative llm-d model (see
+# README section 1) — works when the model is deployed WITHOUT router.scheduler.
+#
+# Key differences from the llm-d generative path:
+#   - router has NO `scheduler:` block -> no InferencePool/EPP (generation-only),
+#     so the generated HTTPRoute includes a catch-all /<ns>/<model> -> Service rule
+#     that forwards /v1/embeddings to vLLM.
+#   - args: --runner pooling  (vLLM 0.18 removed --task embed).
+# Still bound to maas-default-gateway -> same MaaS auth/quota governance.
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: bge-embed
+  namespace: demo-llm
+spec:
+  model:
+    name: bge-embed
+    uri: hf://BAAI/bge-base-en-v1.5
+  replicas: 1
+  router:
+    gateway:
+      refs:
+        - name: maas-default-gateway
+          namespace: openshift-ingress
+    route: {}
+    # no scheduler: => plain vLLM (no llm-d InferencePool)
+  template:
+    containers:
+      - name: main
+        args: ["--runner", "pooling"]
+        resources:
+          limits:
+            cpu: "1"
+            memory: 8Gi
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "1"
+            memory: 8Gi
+            nvidia.com/gpu: "1"
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule

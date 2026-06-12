@@ -1,0 +1,52 @@
+# Publishes bge-embed to MaaS and adds it to the existing subscription + auth
+# policy (alongside qwen-3). Embeddings meter INPUT tokens only; budget 5000/1h.
+---
+apiVersion: maas.opendatahub.io/v1alpha1
+kind: MaaSModelRef
+metadata:
+  name: bge-embed
+  namespace: demo-llm
+spec:
+  modelRef:
+    kind: LLMInferenceService
+    name: bge-embed
+---
+apiVersion: maas.opendatahub.io/v1alpha1
+kind: MaaSSubscription
+metadata:
+  name: test-sub
+  namespace: models-as-a-service
+spec:
+  priority: 0
+  owner:
+    groups:
+      - name: my-model-registry-users
+      - name: rhods-admins
+      - name: system:cluster-admins
+  modelRefs:
+    - name: qwen-3
+      namespace: demo-llm
+      tokenRateLimits:
+        - limit: 1000
+          window: 1h
+    - name: bge-embed
+      namespace: demo-llm
+      tokenRateLimits:
+        - limit: 5000
+          window: 1h
+---
+apiVersion: maas.opendatahub.io/v1alpha1
+kind: MaaSAuthPolicy
+metadata:
+  name: test-sub-policy
+  namespace: models-as-a-service
+spec:
+  subjects:
+    groups:
+      - name: my-model-registry-users
+      - name: system:cluster-admins
+  modelRefs:
+    - name: qwen-3
+      namespace: demo-llm
+    - name: bge-embed
+      namespace: demo-llm

@@ -1,0 +1,21 @@
+# Test B2 — second, separate Gateway (the "secure" trust zone).
+# Purpose: prove a second Gateway API Gateway provisions its OWN distinct
+# external address (separate AWS ELB / VIP), independent of the shared
+# openshift-ai-inference Gateway used by qwen-tools.
+#
+# Same GatewayClass (openshift-default) as the existing inference gateway.
+# Apply: oc apply -f 01-secure-gateway.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: secure-inference
+  namespace: openshift-ingress
+spec:
+  gatewayClassName: openshift-default
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All

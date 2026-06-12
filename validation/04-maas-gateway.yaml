@@ -1,0 +1,36 @@
+# MaaS gateway for THIS cluster (hostname corrected to the cluster-nmv4m apps
+# domain; the repo copy was hardcoded to a different sandbox cluster).
+# Must be named maas-default-gateway in openshift-ingress; the DSC modelsAsService
+# reconcile blocks until it exists.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: maas-gateway-class
+spec:
+  controllerName: openshift.io/gateway-controller/v1
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: maas-default-gateway
+  namespace: openshift-ingress
+  annotations:
+    opendatahub.io/managed: "false"
+    security.opendatahub.io/authorino-tls-bootstrap: "true"
+spec:
+  gatewayClassName: maas-gateway-class
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "maas.apps.cluster-nmv4m.nmv4m.sandbox1140.opentlc.com"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            group: ""
+            name: cert-manager-ingress-cert

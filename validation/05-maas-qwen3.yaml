@@ -1,0 +1,41 @@
+# MaaS-published model for B3 validation. Copied from the repo's
+# qwen-3-llminferenceservice.yaml but replicas: 1 (the cluster has only one
+# free GPU; repo default is 2). Small model (Qwen3-0.6B).
+#
+# KEY TEST: router.gateway.refs binds this LLMInferenceService to
+# maas-default-gateway via plain YAML. Research said "gateway selection does not
+# support MaaS gateways" (the dashboard dropdown) — this checks whether the YAML
+# path works anyway, which is how MaaS subscription/quota enforcement is wired.
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: qwen-3
+  namespace: demo-llm
+spec:
+  model:
+    name: qwen-3
+    uri: hf://Qwen/Qwen3-0.6B
+  replicas: 1
+  router:
+    gateway:
+      refs:
+        - name: maas-default-gateway
+          namespace: openshift-ingress
+    route: {}
+    scheduler: {}
+  template:
+    containers:
+      - name: main
+        resources:
+          limits:
+            cpu: "1"
+            memory: 12Gi
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "1"
+            memory: 12Gi
+            nvidia.com/gpu: "1"
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule

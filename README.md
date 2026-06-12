@@ -1,13 +1,13 @@
-# Option B on RHOAI 3.4 — validated demo
+# Multi-gateway model serving on RHOAI 3.4 — validated demo
 
-Reproducible manifests + findings for the "Option B" multi-gateway architecture on
-Red Hat OpenShift AI 3.4. Two supported scenarios are locked in here:
+Reproducible manifests + findings for multi-gateway LLM serving on Red Hat OpenShift
+AI 3.4. Two supported approaches are covered:
 
-- **Scenario A — B2:** two *separate* Gateway-API gateways (two external IPs), each
-  with its own `LLMInferenceService` (plain llm-d), hard-isolated.
-- **Scenario B — MaaS:** one `maas-default-gateway` serving a **generative** model
-  (qwen-3, llm-d) **and** an **embeddings** model (bge-embed, plain vLLM), governed by
-  MaaS auth + per-model token quota.
+- **Two separate gateways:** two independent Gateway-API gateways (two external IPs),
+  each with its own `LLMInferenceService` (plain llm-d), hard-isolated from each other.
+- **MaaS:** one `maas-default-gateway` serving a **generative** model (qwen-3, llm-d)
+  **and** an **embeddings** model (bge-embed, plain vLLM), governed by MaaS auth +
+  per-model token quota.
 
 Validated live on **OCP 4.20 / RHOAI 3.4, 4× NVIDIA L40S, vLLM `0.18.0+rhaiv.7`**
 (`cluster-nmv4m.nmv4m.sandbox1140.opentlc.com`), 2026-06-12.
@@ -22,12 +22,12 @@ Validated live on **OCP 4.20 / RHOAI 3.4, 4× NVIDIA L40S, vLLM `0.18.0+rhaiv.7`
 
 - RHOAI 3.4 self-managed, cluster-admin.
 - GPU nodes (NVIDIA GPU Operator + NFD). Each model replica needs 1 GPU.
-- **For Scenario B (MaaS):** the MaaS platform must be installed first — Connectivity
-  Link/Kuadrant, `modelsAsService` enabled on the DSC, `maas-default-gateway`,
-  PostgreSQL, Authorino TLS. Follow **`../../rhoai3.4-maas/README.md`** (the operator
-  install, Kuadrant CR, DSC, gateway, DB, TLS, and the Kuadrant-operator restart).
-- For Scenario A you only need a `GatewayClass` using the OpenShift gateway controller
-  (`openshift-default` already exists on a stock cluster).
+- **For MaaS:** the MaaS platform must be installed first — Connectivity Link/Kuadrant,
+  `modelsAsService` enabled on the DSC, `maas-default-gateway`, PostgreSQL, Authorino
+  TLS. Follow **`../rhoai3.4-maas/README.md`** (the operator install, Kuadrant CR, DSC,
+  gateway, DB, TLS, and the Kuadrant-operator restart).
+- For the two-gateway setup you only need a `GatewayClass` using the OpenShift gateway
+  controller (`openshift-default` already exists on a stock cluster).
 
 Edit the apps-domain hostname in `04-maas-gateway.yaml` if you reproduce on another
 cluster.
@@ -36,20 +36,20 @@ cluster.
 
 ## Files
 
-| File | Scenario | Purpose |
-|------|----------|---------|
-| `01-secure-gateway.yaml` | A (B2) | Second, separate Gateway (`secure-inference`) → its own external IP |
-| `02-secure-models-namespace.yaml` | A (B2) | Separate trust-zone namespace |
-| `03-secure-model-llmisvc.yaml` | A (B2) | `LLMInferenceService` bound to `secure-inference` via `router.gateway.refs` |
-| `04-maas-gateway.yaml` | B (MaaS) | `maas-default-gateway` (hostname set for this cluster) |
-| `05-maas-qwen3.yaml` | B (MaaS) | Generative model `qwen-3` (Qwen3-0.6B, llm-d) on the MaaS gateway |
-| `06-maas-modelref.yaml` | B (MaaS) | `MaaSModelRef` publishing qwen-3 to the MaaS catalog |
-| `07-embeddings-llmisvc.yaml` | B (MaaS) | Embeddings model `bge-embed` (plain vLLM, `--runner pooling`) |
-| `08-embeddings-modelref-and-subscription.yaml` | B (MaaS) | Publishes bge-embed + combined subscription/auth-policy (qwen-3 + bge-embed) |
+| File | Group | Purpose |
+|------|-------|---------|
+| `01-secure-gateway.yaml` | Separate gateways | Second, separate Gateway (`secure-inference`) → its own external IP |
+| `02-secure-models-namespace.yaml` | Separate gateways | Separate trust-zone namespace |
+| `03-secure-model-llmisvc.yaml` | Separate gateways | `LLMInferenceService` bound to `secure-inference` via `router.gateway.refs` |
+| `04-maas-gateway.yaml` | MaaS | `maas-default-gateway` (hostname set for this cluster) |
+| `05-maas-qwen3.yaml` | MaaS | Generative model `qwen-3` (Qwen3-0.6B, llm-d) on the MaaS gateway |
+| `06-maas-modelref.yaml` | MaaS | `MaaSModelRef` publishing qwen-3 to the MaaS catalog |
+| `07-embeddings-llmisvc.yaml` | MaaS | Embeddings model `bge-embed` (plain vLLM, `--runner pooling`) |
+| `08-embeddings-modelref-and-subscription.yaml` | MaaS | Publishes bge-embed + combined subscription/auth-policy (qwen-3 + bge-embed) |
 
 ---
 
-## Scenario A — two separate gateways (B2)  ✅ supported
+## Two separate gateways  ✅ supported
 
 ```bash
 oc apply -f 01-secure-gateway.yaml          # second Gateway -> distinct ELB/IP
@@ -70,7 +70,7 @@ What it proves:
 
 ---
 
-## Scenario B — MaaS: generative + embeddings on one gateway  ✅ supported
+## MaaS: generative + embeddings on one gateway  ✅ supported
 
 Install the MaaS platform first (see Prerequisites), then:
 
@@ -148,5 +148,5 @@ pooling/cross-encoder model, not the generative backend.
 - `qwen-tools` (pre-existing demo, Qwen3-4B) scaled to 2 replicas to free GPUs.
 - MaaS platform installed; Service Mesh upgraded 3.1 → 3.3 for Kuadrant.
 - Running models: `qwen-tools` (shared gateway), `qwen-3` + `bge-embed` (MaaS gateway).
-- `secure-inference` gateway exists (Scenario A); its model `03` is not currently
-  applied (was removed earlier to free a GPU) — re-apply to demo B2 live.
+- `secure-inference` gateway exists; its model `03` is not currently applied (was
+  removed earlier to free a GPU) — re-apply to demo two-gateway isolation live.

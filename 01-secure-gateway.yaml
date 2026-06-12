@@ -1,5 +1,5 @@
-# Test B2 — second, separate Gateway (the "secure" trust zone).
-# Purpose: prove a second Gateway API Gateway provisions its OWN distinct
+# Second, separate Gateway (the "secure" trust zone).
+# Purpose: a second Gateway API Gateway provisions its OWN distinct
 # external address (separate AWS ELB / VIP), independent of the shared
 # openshift-ai-inference Gateway used by qwen-tools.
 #

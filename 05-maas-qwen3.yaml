@@ -1,11 +1,10 @@
-# MaaS-published model for B3 validation. Copied from the repo's
-# qwen-3-llminferenceservice.yaml but replicas: 1 (the cluster has only one
-# free GPU; repo default is 2). Small model (Qwen3-0.6B).
+# MaaS-published generative model (Qwen3-0.6B). Copied from the rhoai3.4-maas
+# repo's qwen-3-llminferenceservice.yaml but replicas: 1 (repo default is 2).
 #
-# KEY TEST: router.gateway.refs binds this LLMInferenceService to
-# maas-default-gateway via plain YAML. Research said "gateway selection does not
-# support MaaS gateways" (the dashboard dropdown) — this checks whether the YAML
-# path works anyway, which is how MaaS subscription/quota enforcement is wired.
+# router.gateway.refs binds this LLMInferenceService to maas-default-gateway via
+# plain YAML. (Binding to the MaaS gateway via the dashboard dropdown is not
+# supported, but the YAML path works and is how MaaS subscription/quota
+# enforcement is wired.)
 apiVersion: serving.kserve.io/v1alpha1
 kind: LLMInferenceService
 metadata:

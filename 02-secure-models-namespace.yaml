@@ -1,4 +1,4 @@
-# Separate trust-zone namespace for the "secure" model (B2/B3 isolation).
+# Separate trust-zone namespace for the "secure" model (workload isolation).
 apiVersion: v1
 kind: Namespace
 metadata:

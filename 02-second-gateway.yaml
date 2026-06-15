@@ -13,12 +13,12 @@ metadata:
   name: secure-gateway
   namespace: openshift-ingress
 spec:
-  gatewayClassName: openshift-default
+  gatewayClassName: maas-gateway-class
   listeners:
     - name: https
       protocol: HTTPS
       port: 443
-      hostname: "secure.apps.cluster-nmv4m.nmv4m.sandbox1140.opentlc.com"
+      hostname: "secure.${APPS_DOMAIN}"
       allowedRoutes:
         namespaces:
           from: All

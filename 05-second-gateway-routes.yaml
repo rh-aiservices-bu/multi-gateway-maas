@@ -22,7 +22,7 @@ spec:
       name: secure-gateway
       namespace: openshift-ingress
   hostnames:
-    - "secure.apps.cluster-nmv4m.nmv4m.sandbox1140.opentlc.com"
+    - "secure.${APPS_DOMAIN}"
   rules:
     - matches:
         - path:
@@ -52,7 +52,7 @@ spec:
       name: secure-gateway
       namespace: openshift-ingress
   hostnames:
-    - "secure.apps.cluster-nmv4m.nmv4m.sandbox1140.opentlc.com"
+    - "secure.${APPS_DOMAIN}"
   rules:
     - matches:
         - path:

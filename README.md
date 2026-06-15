@@ -64,10 +64,13 @@ minting stays only on the MaaS gateway; clients mint once and use either gateway
 
 - RHOAI 3.4 with the **MaaS platform installed** — Connectivity Link/Kuadrant,
   `modelsAsService` on the DSC, `maas-default-gateway`, PostgreSQL, Authorino TLS.
-  Follow **`../rhoai3.4-maas/README.md`**.
-- GPU nodes (1 GPU per model replica), `oc` (cluster-admin), `python3` (for the mirror script).
-- Replace the `*.apps.<domain>` hostnames in `01`, `02`, `05` with your cluster's apps
-  domain (the default `*.apps` wildcard cert covers both hostnames).
+  Follow **`https://github.com/rh-aiservices-bu/RHOAI-MaaS-Embedding-Model`**.
+- GPU nodes (1 GPU per model replica), `oc` (cluster-admin), `python3` (mirror script),
+  `envsubst` (from `gettext`, for hostname templating).
+- Hostnames are **not** hardcoded. `01`, `02`, `05` template the host as
+  `maas.${APPS_DOMAIN}` / `secure.${APPS_DOMAIN}`; you fill `APPS_DOMAIN` from the live
+  cluster and render with `envsubst` (see Deploy). This makes a wrong/foreign hostname
+  impossible. The default `*.apps` wildcard cert covers both `maas.` and `secure.` hosts.
 
 ---
 
@@ -88,10 +91,13 @@ minting stays only on the MaaS gateway; clients mint once and use either gateway
 
 ```bash
 # 0. MaaS platform must already be installed (see Prerequisites).
+#    Read the apps domain from THIS cluster (do not type it by hand):
+export APPS_DOMAIN=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
+echo "APPS_DOMAIN=$APPS_DOMAIN"          # must be non-empty, e.g. apps.cluster-xxxx.<...>.com
 
-# 1. Gateways
-oc apply -f 01-maas-gateway.yaml      # skip if the platform install already created it
-oc apply -f 02-second-gateway.yaml
+# 1. Gateways (envsubst fills the templated hostnames):
+envsubst < 01-maas-gateway.yaml | oc apply -f -   # skip if the platform install already created it
+envsubst < 02-second-gateway.yaml | oc apply -f -
 
 # 2. Models, then publish + subscribe
 oc apply -f 03-models.yaml
@@ -100,18 +106,22 @@ oc -n demo-llm wait --for=condition=Ready llminferenceservice/qwen-3 --timeout=6
 oc -n demo-llm wait --for=condition=Ready llminferenceservice/bge-embed --timeout=600s
 
 # 3. Expose the same models on gateway 2 + mirror auth/quota onto those routes
-oc apply -f 05-second-gateway-routes.yaml
+envsubst < 05-second-gateway-routes.yaml | oc apply -f -
 bash mirror-maas-policies.sh
 ```
+
+> `envsubst` only substitutes `${APPS_DOMAIN}`; if it's unset the rendered hostname
+> becomes `maas.`/`secure.` and the Gateway won't program — set it first. Never
+> `oc apply -f` these three files directly (that ships the literal `${APPS_DOMAIN}`).
 
 ---
 
 ## Demonstrate: one key, both gateways
 
 ```bash
-DOMAIN=cluster-nmv4m.nmv4m.sandbox1140.opentlc.com   # <-- your apps domain
-MAAS=maas.apps.$DOMAIN          # gateway 1 (MaaS-managed)
-SECURE=secure.apps.$DOMAIN      # gateway 2 (manual mirror)
+APPS_DOMAIN=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')   # from the cluster
+MAAS=maas.$APPS_DOMAIN          # gateway 1 (MaaS-managed)
+SECURE=secure.$APPS_DOMAIN      # gateway 2 (manual mirror)
 
 # Mint ONE key (maas-api is exposed only on the MaaS gateway). oc token authenticates minting.
 KEY=$(curl -sk -X POST https://$MAAS/maas-api/v1/api-keys \
